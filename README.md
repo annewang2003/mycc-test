@@ -1,0 +1,2 @@
+# mycc-test
+cc objects
