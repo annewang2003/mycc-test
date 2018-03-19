@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<scenario uid="reseller_scenario" type="com.highdeal.iec.hci.ScenarioModel" description="JY 05/04/17 1173757 Changed url to ccdswt1.pok.ibm.com" version="4.6.2.0">
+  <everyMillis startTime="2013-01-01T00:00:00" millis="300000"/>
+  <action uid="Collect File" type="com.highdeal.iec.hci.FileCollectorActionModel" resource-key="file" period="0" decreasing="false" filtering="false">
+    <filecontainer filter="ccdr_LLIV_RESELL*.csv" recursive="false" directory="/sapcc/iec/CDR"/>
+    <action uid="Split Lines in File" type="com.highdeal.iec.hci.FixedLineSetProvidingActionModel" lineset-size="1" input-key="file" keep-empty="false" header-size="0">
+      <rowmap type="com.highdeal.iec.util.RowPositionMap" position="0" key="line" optional="false"/>
+      <action uid="Extract Fields" type="com.highdeal.iec.hci.CSVParsingActionModel" separator="," trim="true" parsed-property="line">
+        <rowmap type="com.highdeal.iec.util.RowPositionMap" position="1" key="ServiceProviderCode" optional="false"/>
+        <rowmap type="com.highdeal.iec.util.RowPositionMap" position="2" key="PartNumber" optional="false"/>
+        <rowmap type="com.highdeal.iec.util.RowPositionMap" position="3" key="ServiceCode" optional="false"/>
+        <rowmap type="com.highdeal.iec.util.RowPositionMap" position="4" key="PartQuantity" optional="false"/>
+        <rowmap type="com.highdeal.iec.util.RowPositionMap" position="5" key="BillingType" optional="false"/>
+        <rowmap type="com.highdeal.iec.util.RowPositionMap" position="6" key="UsageConsumptionDate" optional="false"/>
+        <rowmap type="com.highdeal.iec.util.RowPositionMap" position="0" key="RecordType" optional="false"/>
+        <action uid="Process Fields" type="com.highdeal.iec.hci.GenericItemModifierModel">
+          <modifier uid="Set UsageQuantity" type="com.highdeal.iec.hci.PropertySaverModel" property="PartQuantity" new-property="UsageQuantity"/>
+          <modifier uid="Set correct billing type char value" type="com.highdeal.iec.hci.PropertyComparatorModel" property="BillingType" value="NAMED_SEAT">
+            <modifier uid="Set billing type char to &apos;n&apos;" type="com.highdeal.iec.hci.ConstantPropertyModel" property="BillingTypeChar" value="n"/>
+            <modifier uid="Is billing type METERED?" type="com.highdeal.iec.hci.PropertyComparatorModel" property="BillingType" value="METERED">
+              <modifier uid="Set billing type char to &apos;m&apos;" type="com.highdeal.iec.hci.ConstantPropertyModel" property="BillingTypeChar" value="m"/>
+              <modifier uid="Is billing type CONCURRENT_PORT" type="com.highdeal.iec.hci.PropertyComparatorModel" property="BillingType" value="CONCURRENT_PORT">
+                <modifier uid="Set billing type char to &apos;p&apos;" type="com.highdeal.iec.hci.ConstantPropertyModel" property="BillingTypeChar" value="p"/>
+                <modifier uid="Is billing type test?" type="com.highdeal.iec.hci.PropertyComparatorModel" property="BillingType" value="TEST">
+                  <modifier uid="Set billing type char to &apos;t&apos;" type="com.highdeal.iec.hci.ConstantPropertyModel" property="BillingTypeChar" value="t"/>
+                  <modifier uid="Incorrect billing type" type="com.highdeal.iec.hci.PropertyRejectionModel"/>
+                </modifier>
+              </modifier>
+            </modifier>
+          </modifier>
+          <modifier uid="Replace the servicecode suffix -CUS with -SSP" type="com.highdeal.iec.hci.PropertySuffixReplacerModel" property="ServiceCode" new-property="NewServiceCode" suffix="-CUS" new-suffix="-SSP"/>
+          <modifier uid="Copy ServiceProviderCode To UserId" type="com.highdeal.iec.hci.PropertySaverModel" property="ServiceProviderCode" new-property="UserId">
+            <modifier uid="Append &apos;hyphen&apos; to UserID" type="com.highdeal.iec.hci.PropertyConcatenatorModel" property1="UserId" constant="-" new-property="UserId">
+              <modifier uid="Append &apos;ServiceCode&apos; to UserId" type="com.highdeal.iec.hci.PropertyConcatenatorModel" property1="UserId" property2="NewServiceCode" new-property="UserId">
+                <modifier uid="Append &apos;hyphen&apos; to UserID" type="com.highdeal.iec.hci.PropertyConcatenatorModel" property1="UserId" constant="-" new-property="UserId">
+                  <modifier uid="Append &apos;billingTypeChar&apos; to UserId" type="com.highdeal.iec.hci.PropertyConcatenatorModel" property1="UserId" property2="BillingTypeChar" new-property="UserId">
+                    <modifier uid="Prepend LL- to the user Id" type="com.highdeal.iec.hci.PropertyConcatenatorModel" description="Story 1073712 - Added by jmmcue on Nov 15 2016" property2="UserId" constant="LL-" new-property="UserId"/>
+                  </modifier>
+                </modifier>
+              </modifier>
+            </modifier>
+          </modifier>
+          <action uid="Set Chargeable item for Reseller" type="com.highdeal.iec.hci.XCICreationActionModel" xci-key="XCI">
+            <xcimask ci-type="0" ci-name="SC_CIC_ResellerUsageRecord">
+              <product-name>
+                <propertymask name="Service Identifier" type="com.highdeal.iec.hci.StringPropertyMaskModel" propertytype="1" default="LL"/>
+              </product-name>
+              <user-login>
+                <propertymask name="User Identifier" type="com.highdeal.iec.hci.StringPropertyMaskModel" key="UserId" propertytype="1" default=""/>
+              </user-login>
+              <consumption-date>
+                <propertymask name="Consumption Date" type="com.highdeal.iec.hci.DatePropertyMaskModel" key="UsageConsumptionDate" propertytype="2" format="yyyy-MM-dd HH:mm:ss" language="en" locale-l="en" locale-c="EN" locale-v=""/>
+              </consumption-date>
+              <propertymask name="Service Provider Code" type="com.highdeal.iec.hci.StringPropertyMaskModel" key="ServiceProviderCode" propertytype="1" default=""/>
+              <propertymask name="Part Number" type="com.highdeal.iec.hci.StringPropertyMaskModel" key="PartNumber" propertytype="1" default=""/>
+              <propertymask name="Part Quantity" type="com.highdeal.iec.hci.NumberPropertyMaskModel" key="UsageQuantity" propertytype="0"/>
+              <propertymask name="Usage Consumption Date" type="com.highdeal.iec.hci.DatePropertyMaskModel" key="UsageConsumptionDate" propertytype="2" format="yyyy-MM-dd HH:mm:ss" language="en" locale-l="en" locale-c="EN" locale-v=""/>
+              <propertymask name="Service Code" type="com.highdeal.iec.hci.StringPropertyMaskModel" key="ServiceCode" propertytype="1" default=""/>
+              <propertymask name="CITTYPE" type="com.highdeal.iec.hci.StringPropertyMaskModel" desc="JY 5/16/07 should be SCRO" propertytype="1" default="SCRO"/>
+              <propertymask name="ZZ_CUSTTYPE" type="com.highdeal.iec.hci.StringPropertyMaskModel" propertytype="1" default="LLS"/>
+            </xcimask>
+            <action uid="Multi Threader" type="com.highdeal.iec.hci.ActionMultiThreaderModel" poolsize="1">
+              <action uid="Acquire by CC" type="com.highdeal.iec.hci.AcquireXCIbyCCActionModel" key="XCI" uri="tcp://XXXXXXXXXX:2000" limit="10" timeout="1000" authenticated="false"/>
+            </action>
+          </action>
+        </action>
+      </action>
+    </action>
+  </action>
+</scenario>

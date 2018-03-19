@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<scenario uid="wch_overage_scenario" type="com.highdeal.iec.hci.ScenarioModel" version="4.5.8.1">
+  <everyMillis millis="0"/>
+  <action uid="Collect File" type="com.highdeal.iec.hci.FileCollectorActionModel" resource-key="file" period="0" comparator="com.highdeal.iec.action.FileDateComparator" decreasing="false" filtering="false">
+    <filecontainer filter="ccdr_DEXC*.csv" recursive="false" directory="/sapcc/iec/CDR"/>
+    <action uid="Split lines in File" type="com.highdeal.iec.hci.FixedLineSetProvidingActionModel" lineset-size="1" input-key="file" keep-empty="false" header-size="0">
+      <comment value="HD and TR should be removed by Script"/>
+      <rowmap type="com.highdeal.iec.util.RowPositionMap" position="0" key="line" optional="false"/>
+      <action uid="Extract Fields" type="com.highdeal.iec.hci.CSVParsingActionModel" separator="," trim="true" parsed-property="line">
+        <rowmap type="com.highdeal.iec.util.RowPositionMap" position="0" key="RecordType" optional="false"/>
+        <rowmap type="com.highdeal.iec.util.RowPositionMap" position="1" key="ServiceProviderCode" optional="false"/>
+        <rowmap type="com.highdeal.iec.util.RowPositionMap" position="2" key="ConsumptionStartDate" optional="false"/>
+        <rowmap type="com.highdeal.iec.util.RowPositionMap" position="3" key="ConsumptionEndDate" optional="false"/>
+        <rowmap type="com.highdeal.iec.util.RowPositionMap" position="4" key="CustomerReferenceId" optional="false"/>
+        <rowmap type="com.highdeal.iec.util.RowPositionMap" position="5" key="ServiceCode" optional="false"/>
+        <rowmap type="com.highdeal.iec.util.RowPositionMap" position="6" key="PrimeQuantity" optional="false"/>
+        <rowmap type="com.highdeal.iec.util.RowPositionMap" position="7" key="PrimeQuantityUOM" optional="false"/>
+        <rowmap type="com.highdeal.iec.util.RowPositionMap" position="8" key="AppCode" optional="false"/>
+        <rowmap type="com.highdeal.iec.util.RowPositionMap" position="9" key="SecondaryQuantity" optional="false"/>
+        <rowmap type="com.highdeal.iec.util.RowPositionMap" position="10" key="SecondaryQuantityUOM" optional="false"/>
+        <rowmap type="com.highdeal.iec.util.RowPositionMap" position="11" key="OrgCode" optional="false"/>
+        <rowmap type="com.highdeal.iec.util.RowPositionMap" position="12" key="OrgSubId" optional="false"/>
+        <rowmap type="com.highdeal.iec.util.RowPositionMap" position="13" key="ServiceId" optional="false"/>
+        <rowmap type="com.highdeal.iec.util.RowPositionMap" position="14" key="ServiceSubId" optional="false"/>
+        <action uid="Process Fields" type="com.highdeal.iec.hci.GenericItemModifierModel">
+          <modifier uid="Process only Detailed records" type="com.highdeal.iec.hci.PropertyComparatorModel" property="RecordType" value="DT">
+            <modifier uid="Set Default UserID" type="com.highdeal.iec.hci.PropertyConcatenatorModel" description="serviceProviderCode (default)+CustomerId+ServiceId" property2="CustomerReferenceId" constant="DEXC-" new-property="UserID">
+              <modifier uid="Append - (hyphen) to the UserId" type="com.highdeal.iec.hci.PropertyConcatenatorModel" property1="UserID" constant="-" new-property="UserId">
+                <modifier uid="Append ServiceCode to the UserId" type="com.highdeal.iec.hci.PropertyConcatenatorModel" property1="UserId" property2="ServiceCode" new-property="UserId"/>
+              </modifier>
+            </modifier>
+            <modifier uid="Filter Header or Trailer record" type="com.highdeal.iec.hci.PropertyRejectionModel"/>
+          </modifier>
+          <action uid="Create the Chargeable Item" type="com.highdeal.iec.hci.XCICreationActionModel" xci-key="XCI">
+            <xcimask ci-type="0" ci-name="WCH_CIC_UsageRecord">
+              <product-name>
+                <propertymask name="Service Identifier" type="com.highdeal.iec.hci.StringPropertyMaskModel" propertytype="1" default="DEXC"/>
+              </product-name>
+              <user-login>
+                <propertymask name="User Identifier" type="com.highdeal.iec.hci.StringPropertyMaskModel" key="UserId" propertytype="1" default=""/>
+              </user-login>
+              <consumption-date>
+                <propertymask name="Consumption Date" type="com.highdeal.iec.hci.DatePropertyMaskModel" key="ConsumptionEndDate" propertytype="2" format="yyyy-MM-dd HH:mm:ss" language="en" locale-l="en" locale-c="" locale-v=""/>
+              </consumption-date>
+              <propertymask name="Usage Period Start Date" type="com.highdeal.iec.hci.DatePropertyMaskModel" key="ConsumptionStartDate" propertytype="2" format="yyyy-MM-dd HH:mm:ss" language="en" locale-l="en" locale-c="US" locale-v=""/>
+              <propertymask name="Prime Quantity" type="com.highdeal.iec.hci.NumberPropertyMaskModel" key="PrimeQuantity" propertytype="0" decimal-sep="."/>
+              <propertymask name="Prime Quantity UOM" type="com.highdeal.iec.hci.StringPropertyMaskModel" key="PrimeQuantityUOM" propertytype="1" default=""/>
+              <propertymask name="Secondary Quantity" type="com.highdeal.iec.hci.NumberPropertyMaskModel" key="SecondaryQuantity" propertytype="0" decimal-sep="."/>
+              <propertymask name="Secondary Quantity UOM" type="com.highdeal.iec.hci.StringPropertyMaskModel" key="SecondaryQuantityUOM" propertytype="1" default=""/>
+              <propertymask name="App Code" type="com.highdeal.iec.hci.StringPropertyMaskModel" key="AppCode" propertytype="1" default=""/>
+              <propertymask name="Org Code" type="com.highdeal.iec.hci.StringPropertyMaskModel" key="OrgCode" propertytype="1" default=""/>
+              <propertymask name="Org Sub Id" type="com.highdeal.iec.hci.StringPropertyMaskModel" key="OrgSubId" propertytype="1" default=""/>
+              <propertymask name="Service Id" type="com.highdeal.iec.hci.StringPropertyMaskModel" key="ServiceId" propertytype="1" default=""/>
+              <propertymask name="Service Sub Id" type="com.highdeal.iec.hci.StringPropertyMaskModel" key="ServiceSubId" propertytype="1" default=""/>
+              <propertymask name="CITTYPE" type="com.highdeal.iec.hci.StringPropertyMaskModel" propertytype="1" default="WCHO"/>
+              <propertymask name="ZZ_CUSTTYPE" type="com.highdeal.iec.hci.StringPropertyMaskModel" propertytype="1" default="DEXC"/>
+            </xcimask>
+            <action uid="Multi threader" type="com.highdeal.iec.hci.ActionMultiThreaderModel" poolsize="1">
+              <action uid="Acquisition by CIT" type="com.highdeal.iec.hci.AcquireXCIbyCCActionModel" key="XCI" uri="tcp://XXXXXXXXXX:2000" limit="10" timeout="1000"/>
+            </action>
+          </action>
+        </action>
+      </action>
+    </action>
+  </action>
+</scenario>
