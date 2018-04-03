@@ -56,7 +56,7 @@
               <propertymask name="ZZ_CUSTTYPE" type="com.highdeal.iec.hci.StringPropertyMaskModel" propertytype="1" default="SS03"/>
             </xcimask>
             <action uid="Multi threader" type="com.highdeal.iec.hci.ActionMultiThreaderModel" poolsize="1">
-              <action uid="Acquisition by CIT" type="com.highdeal.iec.hci.AcquireXCIbyCCActionModel" key="XCI" uri="tcp://XXXXXXXXXX:2000" limit="10" timeout="1000"/>
+              <action uid="Acquisition by CIT" type="com.highdeal.iec.hci.AcquireXCIbyCCActionModel" key="XCI" uri="tcp://XXXXXXXXXX:2000" limit="10" timeout="9000"/>
             </action>
           </action>
         </action>
